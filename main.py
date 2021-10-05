@@ -1,14 +1,24 @@
 import stable_baselines3 as sb
 import stable_baselines3.common.env_checker as sb_env_checker
-from stable_baselines3.common.envs import SimpleMultiObsEnv
+import stable_baselines3.common.vec_env as sb_vec_env
 
-import agent
 import rl_env
-import sim
 
 
-def check_env():
-    sb_env_checker.check_env(rl_env.KosciEnv(4))
+def create_simple_environment(seed: int = 0):
+    env = rl_env.KosciEnv(4)
+    env.seed(seed)
+    return env
+
+
+def create_vectorized_environment(num_cpu: int = 8):
+    def make_env(rank: int, seed: int = 0):
+        return create_simple_environment(seed + rank)
+    return sb_vec_env.SubprocVecEnv([lambda: make_env(i) for i in range(num_cpu)])
+
+
+def check_env(env):
+    sb_env_checker.check_env(env)
 
 
 def train(env):
@@ -28,11 +38,17 @@ def test(env, model):
 
 
 def __main__():
-    check_env()
+    env = create_vectorized_environment()
 
-    env = rl_env.KosciEnv(4)
+    # check_env(env)
+
+    print('Training')
     model = train(env)
+    print('Test')
     test(env, model)
+    path = 'model'
+    print(f'Saving to {path}')
+    model.save(path)
 
 
 if __name__ == "__main__":
