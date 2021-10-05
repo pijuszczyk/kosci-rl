@@ -1,3 +1,4 @@
+import logging
 from typing import List, Tuple, Dict
 
 import gym
@@ -52,9 +53,10 @@ class KosciEnv(gym.Env):
         opponents_agents[self.CONTROLLED_PLAYER_IDX] = agent.AgentFactory.make_agent('dummy')
         return opponents_agents
 
-    def __init__(self, n_players: int):
+    def __init__(self, n_players: int, verbosity: int = logging.WARNING):
         super().__init__()
 
+        logging.basicConfig(format='%(levelname)s:%(message)s', level=verbosity)
         self.n_players = n_players
         self.opponents_agents = self._create_opponents_agents()
         self.game = None
@@ -110,7 +112,7 @@ class KosciEnv(gym.Env):
         try:
             reward, done = self._act(action)
         except sim.GameException as ex:
-            print(f'Rule violation occurred: {ex}')
+            logging.debug(f'Rule violation occurred: {ex}')
             reward = self.ILLEGAL_ACTION_PENALTY
             done = True
         observation = self._extract_observation()
@@ -154,11 +156,11 @@ class KosciEnv(gym.Env):
         try:
             agent.act(self.game)
         except sim.GameException as ex:
-            print(f'Opponent agent [{idx}] {str(agent)} tried to perform an illegal action: {ex}')
+            logging.warning(f'Opponent agent [{idx}] {str(agent)} tried to perform an illegal action: {ex}')
         try:
             assert self.game.turn_finished
         except AssertionError:
-            print(f'Opponent agent [{idx}] {str(agent)} did not finish their turn properly')
+            logging.warning(f'Opponent agent [{idx}] {str(agent)} did not finish their turn properly')
 
     def _let_opponents_before_act(self):
         for idx in range(self.CONTROLLED_PLAYER_IDX):
