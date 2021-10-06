@@ -49,13 +49,14 @@ def can_player_enter(roll_score: int) -> bool:
     return roll_score >= 50
 
 
-def is_score_acceptable(player_score: int, roll_score: int) -> bool:
-    if 500 <= player_score < 700:
-        if player_score + roll_score < 700:
-            return False
-    if 800 <= player_score < 900:
-        if player_score + roll_score < 900:
-            return False
+def is_score_acceptable(player_score: int, roll_score: int, enable_thresholds: bool = True) -> bool:
+    if enable_thresholds:
+        if 500 <= player_score < 700:
+            if player_score + roll_score < 700:
+                return False
+        if 800 <= player_score < 900:
+            if player_score + roll_score < 900:
+                return False
     if player_score + roll_score > 1000:
         return False
     return True
@@ -262,8 +263,7 @@ class Game:
         score_to_add = calculate_score(self.current_player_kept_dice, self.current_player_new_dice,
                                        self.current_player_score_in_memory)
         if self.players_entered[self.current_player_idx]:
-            if not self.ENABLE_THRESHOLDS or \
-                    is_score_acceptable(self.players_scores[self.current_player_idx], score_to_add):
+            if is_score_acceptable(self.players_scores[self.current_player_idx], score_to_add, self.ENABLE_THRESHOLDS):
                 self._add_score(score_to_add)
         else:
             if can_player_enter(score_to_add):

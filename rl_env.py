@@ -168,13 +168,13 @@ class KosciEnv(gym.Env):
         try:
             agent.act(self.game)
         except sim.GameException as ex:
-            logging.warning(f'Opponent agent [{idx}] {str(agent)} tried to perform an illegal action: {ex}')
+            logging.warning(f'Opponent agent [{idx}] {str(agent)} tried to perform an illegal action: {ex}.')
         try:
             assert self.game.turn_finished
         except AssertionError:
-            logging.warning(f'Opponent agent [{idx}] {str(agent)} did not finish their turn properly')
+            logging.warning(f'Opponent agent [{idx}] {str(agent)} did not finish their turn properly.')
         if self.game.is_over():
-            logging.debug(f'Opponent agent [{idx}] {str(agent)} won the game')
+            logging.debug(f'Opponent agent [{idx}] {str(agent)} won the game after {self.game.n_rounds} rounds.')
             return True
         else:
             return False
@@ -205,6 +205,7 @@ class KosciEnv(gym.Env):
 
     def _get_game_over_reward_or_penalty(self) -> int:
         if self.game.current_player_idx == self.CONTROLLED_PLAYER_IDX:
+            logging.debug(f'Controlled agent won the game after {self.game.n_rounds} rounds.')
             return self.GAME_FINISHED_REWARD_START - (self.game.n_rounds - 1) * self.GAME_FINISHED_REWARD_DECREASE_RATE
         else:
             return self.OPPONENT_GAME_OVER_PENALTY
