@@ -127,7 +127,7 @@ class KosciEnv(gym.Env):
             logging.debug(f'Rule violation occurred: {ex}')
             reward = self.ILLEGAL_ACTION_PENALTY
             done = True
-        observation = self._extract_observation() if not done else {}
+        observation = self._extract_observation() if not done else {}  # TODO this empty final obs dict messes with check_env()
         info = {}
         return observation, reward, done, info
 
