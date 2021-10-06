@@ -1,3 +1,5 @@
+from typing import Optional
+
 import stable_baselines3 as sb
 import stable_baselines3.common.env_checker as sb_env_checker
 import stable_baselines3.common.vec_env as sb_vec_env
@@ -21,8 +23,10 @@ def check_env(env):
     sb_env_checker.check_env(env)
 
 
-def train(env):
+def train(env, saved_model_path: Optional[str] = None):
     model = sb.PPO('MultiInputPolicy', env, verbose=1)
+    if saved_model_path is not None:
+        model = model.load(saved_model_path, env)
     model.learn(total_timesteps=10000000)
     return model
 
@@ -43,11 +47,11 @@ def __main__():
 
     # check_env(env)
 
+    path = 'model.zip'
     print('Training')
-    model = train(env)
+    model = train(env, path)
     # print('Test')
     # test(env, model)
-    path = 'model.zip'
     print(f'Saving to {path}')
     model.save(path)
 
