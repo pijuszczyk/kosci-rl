@@ -7,11 +7,19 @@ import sim
 class Agent:
     @abstractmethod
     def act(self, game: sim.Game):
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def __str__(self):
+        raise NotImplementedError
+
+
+class _InactiveAgent(Agent):
+    def act(self, game: sim.Game):
         pass
+
+    def __str__(self):
+        return 'Inactive'
 
 
 class _DummyAgent(Agent):
@@ -22,7 +30,7 @@ class _DummyAgent(Agent):
         return 'Dummy'
 
 
-class _NiegardzacyAgent(Agent):
+class _MinScoreAgent(Agent):
     def __init__(self, min_score: int):
         super().__init__()
         assert min_score >= 0
@@ -56,14 +64,18 @@ class _NiegardzacyAgent(Agent):
         game.accept_roll()
 
     def __str__(self):
-        return f'Niegardzący (min {self.min_score})'
+        return f'Min score ({self.min_score})'
 
 
 class AgentFactory:
     @staticmethod
     def make_agent(strategy: str):
+        if strategy == 'inactive':
+            return _InactiveAgent()
         if strategy == 'dummy':
             return _DummyAgent()
         if strategy == 'niegardzący':
-            return _NiegardzacyAgent(40)
+            return _MinScoreAgent(40)
+        if strategy == 'feeling_lucky':
+            return _MinScoreAgent(200)
         raise ValueError
