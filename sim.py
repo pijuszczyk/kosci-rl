@@ -177,7 +177,7 @@ class Game:
     def _log_do_partial_reroll(self, kept_idx: np.ndarray):
         if logging.root.isEnabledFor(logging.DEBUG):
             logging.debug(
-                f'Player [{self.current_player_idx}] rerolled dice, keeping indices: {str(kept_idx)}. '
+                f'Player [{self.current_player_idx}] rerolled dice, keeping indices: {str(len(self.current_player_kept_dice) - len(kept_idx) + kept_idx)}. '
                 f'Dice: {str(np.append(self.current_player_kept_dice, self.current_player_new_dice).astype(np.int16))}. '
                 f'Latent score: {self._get_latent_score()}. '
                 f'Score in memory: {self.current_player_score_in_memory}.')
