@@ -61,7 +61,7 @@ class KosciEnv(gym.Env):
     def __init__(self, n_players: int, verbosity: int = logging.WARNING):
         super().__init__()
 
-        logging.basicConfig(format='%(levelname)s:%(message)s', level=verbosity)
+        logging.basicConfig(format='[%(levelname)s] %(message)s', level=verbosity)
         self.n_players = n_players
         self.opponents_agents = self._create_opponents_agents()
         self.game = None
