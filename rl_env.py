@@ -54,7 +54,7 @@ class KosciEnv(gym.Env):
     CONTROLLED_PLAYER_IDX = 0
 
     def _create_opponents_agents(self) -> List:
-        opponents_agents_types = ['inactive', 'dummy', 'niegardzący', 'feeling_lucky']
+        opponents_agents_types = ['inactive', 'dummy', 'niegardzący', 'moderately_lucky', 'feeling_lucky']
         assert len(opponents_agents_types) == self.n_players
         assert opponents_agents_types[self.CONTROLLED_PLAYER_IDX] == 'inactive'
         opponents_agents = [agent.AgentFactory.make_agent(t) for t in opponents_agents_types]

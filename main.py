@@ -10,7 +10,7 @@ import rl_env
 
 
 def _create_simple_environment(seed: int = 0):
-    env = rl_env.KosciEnv(4)
+    env = rl_env.KosciEnv(5)
     env.seed(seed)
     return env
 

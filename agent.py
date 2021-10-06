@@ -76,6 +76,8 @@ class AgentFactory:
             return _DummyAgent()
         if strategy == 'niegardzący':
             return _MinScoreAgent(40)
+        if strategy == 'moderately_lucky':
+            return _MinScoreAgent(100)
         if strategy == 'feeling_lucky':
             return _MinScoreAgent(200)
         raise ValueError
