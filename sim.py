@@ -1,3 +1,4 @@
+import logging
 from enum import Enum
 from typing import Tuple
 
@@ -153,12 +154,28 @@ class Game:
         if not self.turn_finished:
             raise GameException(ErrorType.TURN_NOT_FINISHED_YET, 'Previous turn still in progress')
 
+    def _log_start_next_turn(self):
+        if logging.root.isEnabledFor(logging.DEBUG):
+            logging.debug(
+                f'Player [{self.current_player_idx}] started a new turn. '
+                f'Dice: {str(self.current_player_new_dice)}. '
+                f'Latent score: {self._get_latent_score()}.')
+
     def start_next_turn(self):
         self._verify_start_next_turn()
         self._increment_current_player_idx()
         self._roll_dice_for_next_turn()
         self._reset_member_variable_for_next_turn()
         self._handle_potential_first_roll_fail()
+        self._log_start_next_turn()
+
+    def _log_do_partial_reroll(self, kept_idx: np.ndarray):
+        if logging.root.isEnabledFor(logging.DEBUG):
+            logging.debug(
+                f'Player [{self.current_player_idx}] rerolled dice, keeping indices: {str(kept_idx)}. '
+                f'Dice: {str(np.append(self.current_player_kept_dice, self.current_player_new_dice).astype(np.int16))}. '
+                f'Latent score: {self._get_latent_score()}. '
+                f'Score in memory: {self.current_player_score_in_memory}.')
 
     def _do_partial_reroll(self, kept_idx: np.ndarray):
         try:
@@ -167,6 +184,7 @@ class Game:
             raise GameException(ErrorType.BAD_REROLL_CHOICE, f'Invalid reroll choice - {str(ex)}')
         self.current_player_kept_dice = np.append(self.current_player_kept_dice, kept)
         self.current_player_new_dice = rerolled
+        self._log_do_partial_reroll(kept_idx)
 
     def _get_latent_score(self):
         return calculate_score(self.current_player_kept_dice, self.current_player_new_dice)
@@ -209,6 +227,14 @@ class Game:
         if not can_reroll_every_dice(self.current_player_kept_dice, self.current_player_new_dice):
             raise GameException(ErrorType.BAD_REROLL_CHOICE, 'Cannot do a full reroll yet, must have all dice locked')
 
+    def _log_do_full_reroll(self):
+        if logging.root.isEnabledFor(logging.DEBUG):
+            logging.debug(
+                f'Player [{self.current_player_idx}] rerolled all dice. '
+                f'Dice: {str(np.append(self.current_player_kept_dice, self.current_player_new_dice).astype(np.int16))}. '
+                f'Latent score: {self._get_latent_score()}. '
+                f'Score in memory: {self.current_player_score_in_memory}.')
+
     def do_full_reroll(self):
         self._verify_full_reroll()
         self._transfer_latent_score_to_memory()
@@ -221,6 +247,13 @@ class Game:
         self._handle_overtakes(score_to_add)
         self.players_scores[self.current_player_idx] += score_to_add
 
+    def _log_accept_roll(self):
+        if logging.root.isEnabledFor(logging.DEBUG):
+            logging.debug(
+                f'Player [{self.current_player_idx}] accepted the roll. '
+                f'Current score: {self.players_scores[self.current_player_idx]}. '
+                f'In game: {self.players_entered[self.current_player_idx]}.')
+
     def _accept_successful_roll(self):
         score_to_add = calculate_score(self.current_player_kept_dice, self.current_player_new_dice,
                                        self.current_player_score_in_memory)
@@ -230,6 +263,7 @@ class Game:
         else:
             if can_player_enter(score_to_add):
                 self.players_entered[self.current_player_idx] = True
+        self._log_accept_roll()
 
     def accept_roll(self):
         if self.turn_finished:
