@@ -49,6 +49,8 @@ class KosciEnv(gym.Env):
     BAD_GAME_POINTS_THRESHOLD = -1000
     BAD_GAME_PENALTY = -500
 
+    OPPONENT_GAME_OVER_PENALTY = -500
+
     CONTROLLED_PLAYER_IDX = 0
 
     def _create_opponents_agents(self) -> List:
@@ -112,7 +114,7 @@ class KosciEnv(gym.Env):
                 done = self._handle_turn_end()
 
         if done:
-            reward += self._get_game_over_reward()
+            reward += self._get_game_over_reward_or_penalty()
         return reward, done
 
     def step(self, action) -> Tuple[Dict, float, bool, Dict]:
@@ -168,26 +170,41 @@ class KosciEnv(gym.Env):
             assert self.game.turn_finished
         except AssertionError:
             logging.warning(f'Opponent agent [{idx}] {str(agent)} did not finish their turn properly')
+        if self.game.is_over():
+            logging.debug(f'Opponent agent [{idx}] {str(agent)} won the game')
+            return True
+        else:
+            return False
 
     def _let_opponents_before_act(self):
         for idx in range(self.CONTROLLED_PLAYER_IDX):
-            self._let_opponent_act(idx)
+            if self._let_opponent_act(idx):
+                return True
+        return False
 
     def _let_opponents_after_act(self):
         for idx in range(self.CONTROLLED_PLAYER_IDX + 1, self.game.n_players):
-            self._let_opponent_act(idx)
+            if self._let_opponent_act(idx):
+                return True
+        return False
 
     def _handle_turn_end(self) -> bool:
+        """ Return true if game's over """
         if self.game.is_over():
             return True
         else:
-            self._let_opponents_after_act()
-            self._let_opponents_before_act()
+            if self._let_opponents_after_act():
+                return True
+            if self._let_opponents_before_act():
+                return True
             self.game.start_next_turn()
             return False
 
-    def _get_game_over_reward(self) -> int:
-        return self.GAME_FINISHED_REWARD_START - (self.game.n_rounds - 1) * self.GAME_FINISHED_REWARD_DECREASE_RATE
+    def _get_game_over_reward_or_penalty(self) -> int:
+        if self.game.current_player_idx == self.CONTROLLED_PLAYER_IDX:
+            return self.GAME_FINISHED_REWARD_START - (self.game.n_rounds - 1) * self.GAME_FINISHED_REWARD_DECREASE_RATE
+        else:
+            return self.OPPONENT_GAME_OVER_PENALTY
 
     def _get_overtake_penalty_reward_boundary(self) -> float:
         return self.OVERTAKE_SAFETY_DISTANCE / 2  # boundary between giving rewards and penalties set halfway
