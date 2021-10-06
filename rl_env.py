@@ -46,6 +46,9 @@ class KosciEnv(gym.Env):
     SUSCEPTIBLE_TO_OVERTAKE_PENALTY_BASE = -15
     OVERTAKE_SAFETY_DISTANCE = 50
 
+    BAD_GAME_POINTS_THRESHOLD = -1000
+    BAD_GAME_PENALTY = -500
+
     CONTROLLED_PLAYER_IDX = 0
 
     def _create_opponents_agents(self) -> List:
@@ -75,6 +78,10 @@ class KosciEnv(gym.Env):
         score_before = self._get_current_player_score()
         self.game.accept_roll()
         score = self._get_current_player_score()
+        if score < self.BAD_GAME_POINTS_THRESHOLD:
+            reward = self.BAD_GAME_PENALTY
+            done = True
+            return reward, done
         reward = (score - score_before)
         if reward > 0:
             reward += self._get_overtakes_rewards_penalties()
