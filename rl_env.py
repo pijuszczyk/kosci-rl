@@ -124,7 +124,7 @@ class KosciEnv(gym.Env):
             logging.debug(f'Rule violation occurred: {ex}')
             reward = self.ILLEGAL_ACTION_PENALTY
             done = True
-        observation = self._extract_observation()
+        observation = self._extract_observation() if not done else {}
         info = {}
         return observation, reward, done, info
 
