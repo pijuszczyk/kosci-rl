@@ -101,9 +101,13 @@ class Game:
     OVERTAKE_PENALTY = -50
     BAD_ROLL_PENALTY = -50
 
+    # game simplification params
+    ENABLE_THRESHOLDS = True
+    REQUIRE_ENTERING = True
+
     def __init__(self, n_players: int):
         self.n_players = n_players
-        self.players_entered = np.full(n_players, False)
+        self.players_entered = np.full(n_players, not self.REQUIRE_ENTERING)
         self.players_scores = np.zeros(n_players)
         self.current_player_idx = n_players-1
         self.current_player_kept_dice = np.empty(self.N_DICE)
@@ -258,7 +262,8 @@ class Game:
         score_to_add = calculate_score(self.current_player_kept_dice, self.current_player_new_dice,
                                        self.current_player_score_in_memory)
         if self.players_entered[self.current_player_idx]:
-            if is_score_acceptable(self.players_scores[self.current_player_idx], score_to_add):
+            if not self.ENABLE_THRESHOLDS or \
+                    is_score_acceptable(self.players_scores[self.current_player_idx], score_to_add):
                 self._add_score(score_to_add)
         else:
             if can_player_enter(score_to_add):
