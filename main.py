@@ -38,15 +38,16 @@ def test(env, model):
 
 
 def __main__():
+    # env = create_simple_environment()
     env = create_vectorized_environment()
 
     # check_env(env)
 
     print('Training')
     model = train(env)
-    print('Test')
-    test(env, model)
-    path = 'model'
+    # print('Test')
+    # test(env, model)
+    path = 'model.zip'
     print(f'Saving to {path}')
     model.save(path)
 
