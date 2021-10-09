@@ -99,7 +99,7 @@ class KosciEnv(gym.Env):
 
     def _do_partial_reroll(self, action):
         cut_bool_indices = action[len(self.game.current_player_kept_dice):]
-        int_indices = [i for i, b in enumerate(cut_bool_indices) if b]
+        int_indices = np.array([i for i, b in enumerate(cut_bool_indices) if b])
         self.game.do_partial_reroll(int_indices)
 
     def _act(self, action) -> Tuple[float, bool]:
