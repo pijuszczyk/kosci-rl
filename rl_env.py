@@ -37,9 +37,10 @@ class KosciEnv(gym.Env):
     """
     metadata = {'render.modes': ['human']}
 
-    ILLEGAL_ACTION_PENALTY = -10000
+    ILLEGAL_ACTION_REACTION = 'penalize'  # retry, penalize
+    ILLEGAL_ACTION_PENALTY = -1000
 
-    GAME_FINISHED_REWARD_START = 1000
+    GAME_FINISHED_REWARD_START = 3000
     GAME_FINISHED_REWARD_DECREASE_RATE = 10
 
     OVERTAKE_REWARD_BASE = 20
@@ -47,9 +48,9 @@ class KosciEnv(gym.Env):
     OVERTAKE_SAFETY_DISTANCE = 50
 
     BAD_GAME_POINTS_THRESHOLD = -1000
-    BAD_GAME_PENALTY = -500
+    BAD_GAME_PENALTY = -1000
 
-    OPPONENT_GAME_OVER_PENALTY = -1000
+    OPPONENT_GAME_OVER_PENALTY = -2000
 
     CONTROLLED_PLAYER_IDX = 0
 
@@ -120,13 +121,19 @@ class KosciEnv(gym.Env):
             reward += self._get_game_over_reward_or_penalty()
         return reward, done
 
+    def _deal_with_rule_violation(self, violation):
+        logging.debug(f'Rule violation occurred: {violation}')
+        if self.ILLEGAL_ACTION_REACTION == 'retry':
+            return 0, False
+        if self.ILLEGAL_ACTION_REACTION == 'penalize':
+            return self.ILLEGAL_ACTION_PENALTY, True
+        raise ValueError(f'Unknown illegal action reaction type: {self.ILLEGAL_ACTION_REACTION}')
+
     def step(self, action) -> Tuple[Dict, float, bool, Dict]:
         try:
             reward, done = self._act(action)
         except sim.GameException as ex:
-            logging.debug(f'Rule violation occurred: {ex}')
-            reward = self.ILLEGAL_ACTION_PENALTY
-            done = True
+            reward, done = self._deal_with_rule_violation(ex)
         observation = self._extract_observation() if not done else {}  # TODO this empty final obs dict messes with check_env()
         info = {}
         return observation, reward, done, info

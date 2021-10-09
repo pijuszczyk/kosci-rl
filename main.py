@@ -27,7 +27,7 @@ def check_env():
 
 
 def _create_model(env, seed: int = 0):
-    return sb.PPO('MultiInputPolicy', env, seed=seed, verbose=1, learning_rate=0.0003)
+    return sb.PPO('MultiInputPolicy', env, seed=seed, verbose=1, learning_rate=0.001)
 
 
 def _train(timesteps, env, saved_model_path: Optional[str] = None, seed: int = 0):
