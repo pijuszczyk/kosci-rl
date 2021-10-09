@@ -62,10 +62,9 @@ class KosciEnv(gym.Env):
         opponents_agents[self.CONTROLLED_PLAYER_IDX] = agent.AgentFactory.make_agent('inactive')
         return opponents_agents
 
-    def __init__(self, n_players: int, verbosity: int = logging.WARNING):
+    def __init__(self, n_players: int):
         super().__init__()
 
-        logging.basicConfig(format='[%(levelname)s] %(message)s', level=verbosity)
         self.n_players = n_players
         self.opponents_agents = self._create_opponents_agents()
         self.game = None

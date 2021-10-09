@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Optional
 
@@ -51,6 +52,8 @@ def _test(env, model):
 
 
 def do_multiproc_training(model_path: Optional[str] = 'model.zip', timesteps: int = 1000000, n_cpu: int = 8, seed: int = 0):
+    logging.basicConfig(format='[%(levelname)s] %(message)s', level=logging.WARN)
+
     env = _create_vectorized_environment(n_cpu, seed)
 
     print('Training')
@@ -66,6 +69,8 @@ def do_multiproc_training(model_path: Optional[str] = 'model.zip', timesteps: in
 
 def do_testing(model=None, model_path: Optional[str] = None, seed: int = 0):
     assert (model is None) != (model_path is None)
+
+    logging.basicConfig(format='[%(levelname)s] %(message)s', level=logging.DEBUG)
 
     env = _create_simple_environment(seed)
     print('Test')
