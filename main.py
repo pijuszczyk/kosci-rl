@@ -82,12 +82,28 @@ def do_testing(model=None, model_path: Optional[str] = None, seed: int = 0):
         _test(env, model)
 
 
+def check_gpu():
+    import torch
+
+    if torch.cuda.is_available():
+        print(torch.cuda.get_device_name(0))
+    else:
+        print('GPU not detected, try adjusting version of CUDA toolkit, CudNN or PyTorch')
+
+
+def enable_gpu(enabled: bool = True):
+    # 0 - GPU, 1 - CPU (on the original machine)
+    os.environ['CUDA_VISIBLE_DEVICES'] = '0' if enabled else '1'
+
+
 def __main__():
     # check_env()
+    # check_gpu()
 
     n_cpu = 8
     seed = 0
     model_path = 'model.zip'
+    enable_gpu(False)
 
     # do_multiproc_training(n_cpu=n_cpu, seed=seed)
     do_testing(model_path=model_path, seed=seed)
