@@ -75,7 +75,7 @@ class KosciEnv(gym.Env):
     @staticmethod
     def _create_observation_space() -> gym.spaces.Dict:
         def create_score():
-            return gym.spaces.Discrete(KosciEnv.MAX_SCORE - KosciEnv.MIN_SCORE + 1)
+            return gym.spaces.Box(KosciEnv.MIN_SCORE, KosciEnv.MAX_SCORE, [1], np.int16)
 
         return gym.spaces.Dict({
             # player's current dice scores
@@ -193,17 +193,17 @@ class KosciEnv(gym.Env):
     def _extract_observation(self) -> Dict:
         assert self.game.current_player_idx == self.CONTROLLED_PLAYER_IDX
 
-        player_score = int(self._get_current_player_score())
+        player_score = self._get_current_player_score()
         opponents_scores = self._get_other_players_scores()
-        opponents_sorted_i = np.argsort(opponents_scores)
-        best_opponent_score = int(opponents_scores[opponents_sorted_i[-1]])
-        worst_opponent_score = int(opponents_scores[opponents_sorted_i[0]])
-        better_opponents_i = np.argwhere(opponents_scores[opponents_sorted_i] > player_score).flatten()
-        if len(better_opponents_i) > 0:
-            next_opponent_score = int(opponents_scores[opponents_sorted_i[better_opponents_i[0]]])
+        opponents_scores.sort()
+        best_opponent_score = opponents_scores[-1]
+        worst_opponent_score = opponents_scores[0]
+        better_opponent_i = np.argmax(opponents_scores > player_score)
+        if better_opponent_i > 0 or worst_opponent_score > player_score:
+            next_opponent_score = opponents_scores[better_opponent_i]
         else:
             next_opponent_score = best_opponent_score
-        score_in_memory = int(self.game.current_player_score_in_memory)
+        score_in_memory = self.game.current_player_score_in_memory
 
         assert self.MIN_SCORE <= player_score <= self.MAX_SCORE
         assert self.MIN_SCORE <= best_opponent_score <= self.MAX_SCORE
@@ -214,11 +214,11 @@ class KosciEnv(gym.Env):
         return {
             'dice': np.append(self.game.current_player_kept_dice, self.game.current_player_new_dice).astype(np.int8) - 1,
             'n_locked_dice': len(self.game.current_player_kept_dice),
-            'score_in_memory': score_in_memory - self.MIN_SCORE,
-            'player_score': player_score - self.MIN_SCORE,
-            'next_opponent_score': next_opponent_score - self.MIN_SCORE,
-            'best_opponent_score': best_opponent_score - self.MIN_SCORE,
-            'worst_opponent_score': worst_opponent_score - self.MIN_SCORE,
+            'score_in_memory': np.array([score_in_memory], np.int16),
+            'player_score': np.array([player_score], np.int16),
+            'next_opponent_score': np.array([next_opponent_score], np.int16),
+            'best_opponent_score': np.array([best_opponent_score], np.int16),
+            'worst_opponent_score': np.array([worst_opponent_score], np.int16),
             'player_entered': np.array([self._get_current_player_entered()], np.int8),
             'any_opponent_entered': np.array([np.any(self._get_other_players_entered())])
         }
