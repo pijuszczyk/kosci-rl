@@ -167,7 +167,7 @@ class KosciEnv(gym.Env):
             reward, done = self._act(action)
         except sim.GameException as ex:
             reward, done = self._deal_with_rule_violation(ex)
-        observation = self._extract_observation() if not done else {}  # TODO this empty final obs dict messes with check_env()
+        observation = self._extract_observation() if not done else self.observation_space.sample()  # TODO this else could be improved
         info = {}
         return observation, reward, done, info
 
