@@ -40,8 +40,9 @@ class KosciEnv(gym.Env):
     ILLEGAL_ACTION_REACTION = 'penalize'  # retry, penalize
     ILLEGAL_ACTION_PENALTY = -1000
 
-    GAME_FINISHED_REWARD_START = 3000
-    GAME_FINISHED_REWARD_DECREASE_RATE = 10
+    GAME_WON_REWARD_BASE = 3000
+    GAME_WON_REWARD_DECREASE_RATE = 10
+    GAME_WON_REWARD_PERSISTING_BONUS = 100
 
     OVERTAKE_REWARD_BASE = 20
     SUSCEPTIBLE_TO_OVERTAKE_PENALTY_BASE = -15
@@ -262,7 +263,8 @@ class KosciEnv(gym.Env):
     def _get_game_over_reward_or_penalty(self) -> int:
         if self.game.current_player_idx == self.CONTROLLED_PLAYER_IDX:
             logging.debug(f'Controlled agent won the game after {self.game.n_rounds} rounds.')
-            return self.GAME_FINISHED_REWARD_START - (self.game.n_rounds - 1) * self.GAME_FINISHED_REWARD_DECREASE_RATE
+            time_reward = max(0, self.GAME_WON_REWARD_BASE - (self.game.n_rounds - 1) * self.GAME_WON_REWARD_DECREASE_RATE)
+            return time_reward + self.GAME_WON_REWARD_PERSISTING_BONUS
         else:
             return self.OPPONENT_GAME_OVER_PENALTY
 
