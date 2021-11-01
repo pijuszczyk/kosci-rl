@@ -54,6 +54,10 @@ class KosciEnv(gym.Env):
 
     CONTROLLED_PLAYER_IDX = 0
 
+    # every player and opponent score must not go beyond those limits
+    MIN_SCORE = -2000
+    MAX_SCORE = 2000
+
     def _create_opponents_agents(self) -> List:
         opponents_agents_types = ['inactive', 'dummy', 'niegardzący', 'moderately_lucky', 'feeling_lucky']
         assert len(opponents_agents_types) == self.n_players
@@ -62,22 +66,47 @@ class KosciEnv(gym.Env):
         opponents_agents[self.CONTROLLED_PLAYER_IDX] = agent.AgentFactory.make_agent('inactive')
         return opponents_agents
 
+    @staticmethod
+    def _create_action_space() -> gym.spaces.MultiBinary:
+        # 1 means the player wants to reroll a dice on that position
+        return gym.spaces.MultiBinary(sim.Game.N_DICE)
+
+    @staticmethod
+    def _create_observation_space() -> gym.spaces.Dict:
+        def create_score():
+            return gym.spaces.Discrete(KosciEnv.MAX_SCORE - KosciEnv.MIN_SCORE + 1)
+
+        return gym.spaces.Dict({
+            # player's current dice scores
+            'dice': gym.spaces.MultiDiscrete([6] * sim.Game.N_DICE, np.int8),
+            # player's number of locked dice (they are always placed at the beginning of dice list)
+            'n_locked_dice': gym.spaces.Discrete(sim.Game.N_DICE + 1),
+            # player's score in memory
+            'score_in_memory': create_score(),
+            # player / RL agent score
+            'player_score': create_score(),
+            # score of the next best OR the next worse opponent (if the player is #1)
+            'next_opponent_score': create_score(),
+            # score of the best opponent
+            'best_opponent_score': create_score(),
+            # score of the worst opponent
+            'worst_opponent_score': create_score(),
+            # whether the player entered the game
+            'player_entered': gym.spaces.MultiBinary(1),
+            # whether any opponent entered the game
+            'any_opponent_entered': gym.spaces.MultiBinary(1)
+        })
+
     def __init__(self, n_players: int):
+        assert(n_players > 0)
+
         super().__init__()
 
         self.n_players = n_players
         self.opponents_agents = self._create_opponents_agents()
         self.game = None
-        self.action_space = gym.spaces.Box(0, 1, [sim.Game.N_DICE], np.int8)
-        self.observation_space = gym.spaces.Dict({
-            'dice': gym.spaces.Box(1, 6, [sim.Game.N_DICE], np.int8),
-            'n_locked_dice': gym.spaces.Discrete(sim.Game.N_DICE + 1),
-            'score_in_memory': gym.spaces.Box(0, 1000, [1], np.int16),
-            'player_score': gym.spaces.Box(-1000, 1000, [1], np.int16),
-            'opponents_score': gym.spaces.Box(-1000, 1000, [n_players - 1], np.int16),
-            'player_entered': gym.spaces.Box(0, 1, [1], np.int8),
-            'opponents_entered': gym.spaces.Box(0, 1, [n_players - 1], np.int8)
-        })
+        self.action_space = self._create_action_space()
+        self.observation_space = self._create_observation_space()
 
     def _accept_roll(self) -> Tuple[float, bool]:
         score_before = self._get_current_player_score()
@@ -158,14 +187,35 @@ class KosciEnv(gym.Env):
 
     def _extract_observation(self) -> Dict:
         assert self.game.current_player_idx == self.CONTROLLED_PLAYER_IDX
+
+        player_score = int(self._get_current_player_score())
+        opponents_scores = self._get_other_players_scores()
+        opponents_sorted_i = np.argsort(opponents_scores)
+        best_opponent_score = int(opponents_scores[opponents_sorted_i[-1]])
+        worst_opponent_score = int(opponents_scores[opponents_sorted_i[0]])
+        better_opponents_i = np.argwhere(opponents_scores[opponents_sorted_i] > player_score).flatten()
+        if len(better_opponents_i) > 0:
+            next_opponent_score = int(opponents_scores[opponents_sorted_i[better_opponents_i[0]]])
+        else:
+            next_opponent_score = best_opponent_score
+        score_in_memory = int(self.game.current_player_score_in_memory)
+
+        assert self.MIN_SCORE <= player_score <= self.MAX_SCORE
+        assert self.MIN_SCORE <= best_opponent_score <= self.MAX_SCORE
+        assert self.MIN_SCORE <= worst_opponent_score <= self.MAX_SCORE
+        assert self.MIN_SCORE <= next_opponent_score <= self.MAX_SCORE
+        assert self.MIN_SCORE <= score_in_memory <= self.MAX_SCORE
+
         return {
-            'dice': np.append(self.game.current_player_kept_dice, self.game.current_player_new_dice).astype(np.int8),
+            'dice': np.append(self.game.current_player_kept_dice, self.game.current_player_new_dice).astype(np.int8) - 1,
             'n_locked_dice': len(self.game.current_player_kept_dice),
-            'score_in_memory': np.array([self.game.current_player_score_in_memory], np.int16),
-            'player_score': np.array([self._get_current_player_score()], np.int16),
-            'opponents_score': self._get_other_players_scores().astype(np.int16),
+            'score_in_memory': score_in_memory - self.MIN_SCORE,
+            'player_score': player_score - self.MIN_SCORE,
+            'next_opponent_score': next_opponent_score - self.MIN_SCORE,
+            'best_opponent_score': best_opponent_score - self.MIN_SCORE,
+            'worst_opponent_score': worst_opponent_score - self.MIN_SCORE,
             'player_entered': np.array([self._get_current_player_entered()], np.int8),
-            'opponents_entered': self._get_other_players_entered().astype(np.int8)
+            'any_opponent_entered': np.array([np.any(self._get_other_players_entered())])
         }
 
     def _let_opponent_act(self, idx):
