@@ -6,6 +6,7 @@ import numpy as np
 import stable_baselines3 as sb
 import stable_baselines3.common.env_checker as sb_env_checker
 import stable_baselines3.common.vec_env as sb_vec_env
+import stable_baselines3.common.callbacks as sb3_callbacks
 
 import rl_env
 
@@ -27,16 +28,25 @@ def check_env():
     sb_env_checker.check_env(env)
 
 
-def _create_model(env, seed: int = 0):
-    return sb.PPO('MultiInputPolicy', env, seed=seed, verbose=1, learning_rate=0.001)
+def _create_model(env, tensorboard_log: Optional[str] = None, seed: int = 0):
+    policy_kwargs = {'net_arch': [256, 128, 64, {'pi': [64, 64], 'vf': [64, 64]}]}
+    return sb.PPO('MultiInputPolicy',
+                  env,
+                  seed=seed,
+                  verbose=1,
+                  learning_rate=0.1,
+                  batch_size=256,
+                  tensorboard_log=tensorboard_log,
+                  policy_kwargs=policy_kwargs)
 
 
 def _train(timesteps, env, saved_model_path: Optional[str] = None, seed: int = 0):
-    model = _create_model(env, seed)
+    model = _create_model(env, 'tensorboard', seed)
     if saved_model_path is not None:
         model = model.load(saved_model_path, env)
     if timesteps > 0:
-        model.learn(total_timesteps=timesteps)
+        checkpoint_callback = sb3_callbacks.CheckpointCallback(save_freq=10000, save_path='./logs/', name_prefix='model')
+        model.learn(total_timesteps=timesteps, callback=checkpoint_callback)
     return model
 
 
@@ -78,7 +88,7 @@ def do_testing(model=None, model_path: Optional[str] = None, seed: int = 0):
     if model is not None:
         _test(env, model)
     elif model_path is not None:
-        model = _create_model(env, seed).load(model_path, env)
+        model = _create_model(env, None, seed).load(model_path, env)
         _test(env, model)
 
 

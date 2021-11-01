@@ -6,6 +6,7 @@ channels:
 dependencies:
   - python=3.8
   - stable-baselines3=1.1.0
+  - tensorboard=1.15.0
   - pytorch=1.10.0=py3.8_cpu_0
 #  - pytorch==1.10.0=py3.8_cuda11.3_cudnn8_0
 #  - cudatoolkit=11.3
