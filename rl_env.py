@@ -127,7 +127,11 @@ class KosciEnv(gym.Env):
         self.game.do_full_reroll()
 
     def _do_partial_reroll(self, action):
-        cut_bool_indices = action[len(self.game.current_player_kept_dice):]
+        kept_dice_num = len(self.game.current_player_kept_dice)
+        if np.any(action[:kept_dice_num]):
+            raise sim.GameException(sim.ErrorType.BAD_REROLL_CHOICE, 'One of kept dice chosen for a reroll')
+
+        cut_bool_indices = action[kept_dice_num:]
         int_indices = np.array([i for i, b in enumerate(cut_bool_indices) if b])
         self.game.do_partial_reroll(int_indices)
 
